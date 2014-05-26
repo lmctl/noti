@@ -22,6 +22,8 @@
 #include <gio/gio.h>
 
 #include "notification.h"
+#include "data.h"
+#include "helpers.h"
 
 /*  Server identification
  *
@@ -84,6 +86,8 @@ static const char noti_dbus_introspection_xml[] = ""
        "  </interface>"
        "</node>";
 
+static struct Data *data;
+
 
 static void on_method_call(GDBusConnection * conn, const gchar * sender, const gchar * obj_path,
 		    const gchar * iface_name, const gchar * method_name, GVariant * params,
@@ -112,20 +116,27 @@ static void on_method_call(GDBusConnection * conn, const gchar * sender, const g
 
 	  gchar * app_name = NULL, * summary = NULL, * body = NULL;
 	  uint32_t id;
-	  char *s;
-	  struct Notification *n;
+	  struct Notification * n;
 
 	  g_variant_get(params, "(&su&s&s&s^a&sa{sv}i)", &app_name, &id, NULL, &summary, &body, NULL, NULL, NULL);
 
-	  if (!id) {
-	       id = get_next_id();
-	       s = "New notification";
-	  } else
-	       s = "Update existing notification";
+	  n = notification_new(id, app_name, summary, body, 0);
 
-	  g_message("%s: id: %u; application: %s; summary: %s; body: %s", s, id, app_name, summary, body);
+	  notification_print(n);
 
-	  v = g_variant_new("(u)", id);
+	  if (!id)
+	       data_add(data, n);
+	  else {
+	       int r;
+
+	       r = data_apply_if(data, h_notification_cmp_id, (void *)n->id, h_notification_replace, (void *)n);
+	       if (!r)
+		    g_warning("Unable to update non-existent notification id %u", n->id);
+
+	       notification_release(n);
+	  }
+
+	  v = g_variant_new("(u)", n->id);
 	  g_dbus_method_invocation_return_value(invocation, v);
 
      } else if (!g_strcmp0(method_name, "CloseNotification")) {
@@ -164,6 +175,8 @@ void on_name_lost(GDBusConnection *conn, const gchar *name, gpointer user_data)
 int main(int ac, char * av[])
 {
      GMainLoop * ev;
+
+     data = data_new(h_notification_release);
 
      g_introspection = g_dbus_node_info_new_for_xml(noti_dbus_introspection_xml, NULL);
 
