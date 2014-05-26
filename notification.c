@@ -84,3 +84,15 @@ void notification_release(struct Notification * n)
      free(n->body);
      free(n);
 }
+
+void notification_print(struct Notification * n)
+{
+     printf("Notification: %u time stamp <%lu.%lu usec> expire <%d ms>\n"
+	    "         app: <%s>\n"
+            "     summary: <%s>\n"
+	    "        body: <%s>\n"
+	    "       flags: is_expired <%d> is_closed <%d> been_shown: <%d>\n",
+	    n->id, n->timestamp.tv_sec, n->timestamp.tv_usec, n->expire_ms,
+	    n->app, n->summary, n->body,
+	    n->is_expired, n->is_closed, n->been_shown);
+}

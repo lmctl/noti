@@ -35,4 +35,6 @@ void notification_update(struct Notification * n, char * app, char * summary, ch
 /*  Release previously allocated notification and its members */
 void notification_release(struct Notification * n);
 
+void notification_print(struct Notification * n);
+
 #endif /* NOTIFICATION_H */
