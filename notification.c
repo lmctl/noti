@@ -1,6 +1,11 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 #include "notification.h"
+
+#define SUMMARY_MAX 128
+#define BODY_MAX 2048
 
 /*  Get monotically increasing notification id
  *
@@ -29,4 +34,48 @@ uint32_t get_next_id(void)
 	  id_seq = 1;
 
      return id_seq;
+}
+
+static void notification_fill(struct Notification * n, char * summary, char * body, int32_t expire_ms)
+{
+     if (n->summary)
+	  free(n->summary);
+
+     if (n->body)
+	  free(n->body);
+
+     n->expire_ms = expire_ms;
+     n->summary = strndup(summary, SUMMARY_MAX);
+     n->body = strndup(body, BODY_MAX);
+     gettimeofday(&n->timestamp, NULL);
+}
+
+struct Notification * notification_new(char * summary, char * body, int32_t expire_ms)
+{
+     struct Notification * n;
+
+     n = calloc(sizeof *n, 1);
+     if (!n)
+	  return NULL;
+
+     notification_fill(n, summary, body, expire_ms);
+     n->id = get_next_id();
+
+     return n;
+}
+
+void notification_update(struct Notification * n, char * summary, char * body, int32_t expire_ms)
+{
+     notification_fill(n, summary, body, expire_ms);
+
+     n->is_closed = 0;
+     n->is_expired = 0;
+     n->been_shown = 0;
+}
+
+void notification_release(struct Notification * n)
+{
+     free(n->summary);
+     free(n->body);
+     free(n);
 }
