@@ -21,6 +21,7 @@
 #include <glib.h>
 #include <gio/gio.h>
 
+#include "notification.h"
 
 /*  Server identification
  *
@@ -84,35 +85,6 @@ static const char noti_dbus_introspection_xml[] = ""
        "</node>";
 
 
-/*  Get monotically increasing notification id
- *
- *  Implementation note: Spec (1.2) requires us to return notification
- *  id as UINT32 but it also states:
- *
- *    [id] "It is unique, and will not be reused unless a MAXINT
- *    number of notifications have been generated. An acceptable
- *    implementation may just use an incrementing counter for the
- *    ID. The returned ID is always greater than zero. Servers must
- *    make sure not to return zero as an ID."
- *
- *  MAXINT value is not described in this spec so it's assumed it is
- *  standard INT(32)_MAX.  Consequence is that on 32-bit machines
- *  notification id wraps at 2^31-1 instead of 2^32-1 (what UINT32
- *  would allow).
- */
-guint32 get_next_id(void)
-{
-     static gint id_seq = 0;
-
-     /* XXX Locking ... */
-     ++ id_seq;
-
-     if (id_seq == 0 || id_seq >= G_MAXINT32)
-	  id_seq = 1;
-
-     return id_seq;
-}
-
 static void on_method_call(GDBusConnection * conn, const gchar * sender, const gchar * obj_path,
 		    const gchar * iface_name, const gchar * method_name, GVariant * params,
 		    GDBusMethodInvocation * invocation, gpointer user_data)
@@ -139,8 +111,9 @@ static void on_method_call(GDBusConnection * conn, const gchar * sender, const g
      } else if (!g_strcmp0(method_name, "Notify")) {
 
 	  gchar * app_name = NULL, * summary = NULL, * body = NULL;
-	  guint32 id;
+	  uint32_t id;
 	  char *s;
+	  struct Notification *n;
 
 	  g_variant_get(params, "(&su&s&s&s^a&sa{sv}i)", &app_name, &id, NULL, &summary, &body, NULL, NULL, NULL);
 
