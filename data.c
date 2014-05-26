@@ -60,6 +60,37 @@ int data_remove_if(struct Data * ctx, data_condition_fn fn, void * arg)
      return removed;
 }
 
+void data_apply(struct Data * ctx, data_apply_fn applyfn, void * arg)
+{
+     GList * p;
+
+     g_mutex_lock(&ctx->lock);
+
+     for (p = ctx->q.head; p; p = p->next)
+	  applyfn(p->data, arg);
+
+     g_mutex_unlock(&ctx->lock);
+}
+
+int data_apply_if(struct Data * ctx, data_condition_fn testfn, void * arg1, data_apply_fn applyfn, void * arg2)
+{
+     GList * p;
+     int applied = 0;
+
+     g_mutex_lock(&ctx->lock);
+
+     for (p = ctx->q.head; p; p = p->next) {
+	  if (testfn(p->data, arg1) == 1) {
+	       applyfn(p->data, arg2);
+	       applied = 1;
+	  }
+     }
+
+     g_mutex_unlock(&ctx->lock);
+
+     return applied;
+}
+
 void data_release(struct Data * ctx)
 {
      data_clear(ctx);
