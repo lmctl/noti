@@ -38,13 +38,26 @@ void data_clear(struct Data * ctx)
      g_mutex_unlock(&ctx->lock);
 }
 
-void data_remove_if(struct Data * ctx, data_remove_if_fn fn)
+int data_remove_if(struct Data * ctx, data_condition_fn fn, void * arg)
 {
-     GList * p;
+     GList * p, * r;
+     int removed = 0;
 
      g_mutex_lock(&ctx->lock);
+
+     for (p = ctx->q.head; p; p = r) {
+	  r = p->next;
+
+	  if (fn(p->data, arg) == 1) {
+	       ctx->release_fn(p->data);
+	       g_queue_remove(&ctx->q, p->data);
+	       removed = 1;
+	  }
+     }
+
      g_mutex_unlock(&ctx->lock);
 
+     return removed;
 }
 
 void data_release(struct Data * ctx)
