@@ -6,6 +6,7 @@
 
 struct Notification {
      uint32_t id;
+     char * app;
      char * summary;
      char * body;
      struct timeval timestamp;   /* time when notification has been received */
@@ -24,12 +25,12 @@ uint32_t get_next_id(void);
 /*  Create new notification entry
  *
  *  Note that timestamp and id are automatically generated */
-struct Notification * notification_new(char * summary, char * body, int32_t expire_ms);
+struct Notification * notification_new(char * app, char * summary, char * body, int32_t expire_ms);
 
 /*  Replace existing notification
  *
  *  Also updates timestamp and resets flags */
-void notification_update(struct Notification * n, char * summary, char * body, int32_t expire_ms);
+void notification_update(struct Notification * n, char * app, char * summary, char * body, int32_t expire_ms);
 
 /*  Release previously allocated notification and its members */
 void notification_release(struct Notification * n);

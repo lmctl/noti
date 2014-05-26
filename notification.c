@@ -36,8 +36,11 @@ uint32_t get_next_id(void)
      return id_seq;
 }
 
-static void notification_fill(struct Notification * n, char * summary, char * body, int32_t expire_ms)
+static void notification_fill(struct Notification * n, char * app, char * summary, char * body, int32_t expire_ms)
 {
+     if (n->app)
+	  free(n->app);
+
      if (n->summary)
 	  free(n->summary);
 
@@ -50,7 +53,7 @@ static void notification_fill(struct Notification * n, char * summary, char * bo
      gettimeofday(&n->timestamp, NULL);
 }
 
-struct Notification * notification_new(char * summary, char * body, int32_t expire_ms)
+struct Notification * notification_new(char * app, char * summary, char * body, int32_t expire_ms)
 {
      struct Notification * n;
 
@@ -58,15 +61,15 @@ struct Notification * notification_new(char * summary, char * body, int32_t expi
      if (!n)
 	  return NULL;
 
-     notification_fill(n, summary, body, expire_ms);
+     notification_fill(n, app, summary, body, expire_ms);
      n->id = get_next_id();
 
      return n;
 }
 
-void notification_update(struct Notification * n, char * summary, char * body, int32_t expire_ms)
+void notification_update(struct Notification * n, char * app, char * summary, char * body, int32_t expire_ms)
 {
-     notification_fill(n, summary, body, expire_ms);
+     notification_fill(n, app, summary, body, expire_ms);
 
      n->is_closed = 0;
      n->is_expired = 0;
