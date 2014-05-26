@@ -55,7 +55,7 @@ static void notification_fill(struct Notification * n, char * app, char * summar
      gettimeofday(&n->timestamp, NULL);
 }
 
-struct Notification * notification_new(char * app, char * summary, char * body, int32_t expire_ms)
+struct Notification * notification_new(uint32_t id, char * app, char * summary, char * body, int32_t expire_ms)
 {
      struct Notification * n;
 
@@ -64,7 +64,7 @@ struct Notification * notification_new(char * app, char * summary, char * body, 
 	  return NULL;
 
      notification_fill(n, app, summary, body, expire_ms);
-     n->id = get_next_id();
+     n->id = id ? id : get_next_id();
 
      return n;
 }
