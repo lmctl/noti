@@ -4,6 +4,7 @@
 #include <string.h>
 #include "notification.h"
 
+#define APP_MAX 128
 #define SUMMARY_MAX 128
 #define BODY_MAX 2048
 
@@ -48,6 +49,7 @@ static void notification_fill(struct Notification * n, char * app, char * summar
 	  free(n->body);
 
      n->expire_ms = expire_ms;
+     n->app = strndup(app, APP_MAX);
      n->summary = strndup(summary, SUMMARY_MAX);
      n->body = strndup(body, BODY_MAX);
      gettimeofday(&n->timestamp, NULL);
