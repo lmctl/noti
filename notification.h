@@ -11,8 +11,8 @@ struct Notification {
      char * body;
      struct timeval timestamp;   /* time when notification has been received */
      int32_t expire_ms;          /* expire notification this many milliseconds after receiving it */
-     _Bool is_closed;            /* notification closed via eplicit call to CloseNotification */
      _Bool is_expired;           /* ... expired via timer */
+     _Bool is_closed;            /* notification closed via explicit call to CloseNotification */
      _Bool been_shown;           /* has the notification been shown at all? */
 };
 
