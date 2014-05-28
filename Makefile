@@ -5,3 +5,6 @@ OBJS		:= notification.o data.o timer.o main.o
 
 all:		$(OBJS)
 		$(CC) -o traynoti $(LDFLAGS) $(OBJS)
+
+clobber:
+		rm -f traynoti *.o *~
