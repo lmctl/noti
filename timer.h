@@ -16,7 +16,12 @@ struct Timer {
 };
 
 struct Timer * timer_new(timer_timeout_fn fn, void * arg);
+void timer_init(struct Timer *, timer_timeout_fn fn, void * arg);
 void timer_timeout_set(struct Timer *, unsigned int timeout_ms);
+unsigned int timer_timeout_get(struct Timer *);
+void timer_timeout_fn_set(struct Timer *, timer_timeout_fn fn, void * arg);
+_Bool timer_is_expired(struct Timer *);
+_Bool timer_is_active(struct Timer *);
 void timer_run(struct Timer *);
 void timer_stop(struct Timer *);
 void timer_release(struct Timer *);
