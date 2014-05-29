@@ -49,7 +49,7 @@ static void notification_fill(struct Notification * n, char * app, char * summar
      if (n->body)
 	  free(n->body);
 
-     n->expire_ms = expire_ms;
+     n->expire_ms = expire_ms == -1 ? DEFAULT_EXPIRE_MS : expire_ms;
      n->app = strndup(app, APP_MAX);
      n->summary = strndup(summary, SUMMARY_MAX);
      n->body = strndup(body, BODY_MAX);

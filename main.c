@@ -25,8 +25,6 @@
 #include "data.h"
 #include "helpers.h"
 
-#define DEFAULT_EXPIRE_MS 2000
-
 /*  Server identification
  *
  *  This information is returned verbatim by GetServerIdentification D-Bus method
@@ -122,9 +120,6 @@ static void on_method_call(GDBusConnection * conn, const gchar * sender, const g
 	  struct Notification * n;
 
 	  g_variant_get(params, "(&su&s&s&s^a&sa{sv}i)", &app_name, &id, NULL, &summary, &body, NULL, NULL, &expire_ms);
-
-	  if (expire_ms == -1)
-	       expire_ms = DEFAULT_EXPIRE_MS;
 
 	  n = notification_new(id, app_name, summary, body, expire_ms);
 

@@ -6,6 +6,8 @@
 
 #include "timer.h"
 
+#define DEFAULT_EXPIRE_MS 2000
+
 struct Notification {
      uint32_t id;
      char * app;
