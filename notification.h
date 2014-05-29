@@ -4,16 +4,19 @@
 #include <stdint.h>
 #include <sys/time.h>
 
+#include "timer.h"
+
 struct Notification {
      uint32_t id;
      char * app;
      char * summary;
      char * body;
      struct timeval timestamp;   /* time when notification has been received */
+     struct Timer timer;         /* timer related to this notification */
      int32_t expire_ms;          /* expire notification this many milliseconds after receiving it */
-     _Bool is_expired;           /* ... expired via timer */
      _Bool is_closed;            /* notification closed via explicit call to CloseNotification */
      _Bool been_shown;           /* has the notification been shown at all? */
+     _Bool been_replaced;        /* notification has been updated/replaced */
 };
 
 /*  Get monotically increasing notification id

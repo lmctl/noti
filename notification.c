@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
+
 #include "notification.h"
 
 #define APP_MAX 128
@@ -74,8 +75,8 @@ void notification_update(struct Notification * n, char * app, char * summary, ch
      notification_fill(n, app, summary, body, expire_ms);
 
      n->is_closed = 0;
-     n->is_expired = 0;
      n->been_shown = 0;
+     n->been_replaced = 1;
 }
 
 void notification_release(struct Notification * n)
@@ -91,8 +92,8 @@ void notification_print(struct Notification * n)
 	    "         app: <%s>\n"
             "     summary: <%s>\n"
 	    "        body: <%s>\n"
-	    "       flags: is_expired <%d> is_closed <%d> been_shown: <%d>\n",
+	    "       flags: is_closed <%d> been_shown: <%d>\n",
 	    n->id, n->timestamp.tv_sec, n->timestamp.tv_usec, n->expire_ms,
 	    n->app, n->summary, n->body,
-	    n->is_expired, n->is_closed, n->been_shown);
+	    n->is_closed, n->been_shown);
 }

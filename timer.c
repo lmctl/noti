@@ -100,11 +100,10 @@ void timer_run(struct Timer * t)
 {
      g_mutex_lock(&t->lock);
 
-     t->is_expired = 0;
-
      if (t->is_active)
 	  g_source_remove(t->handle);
 
+     t->is_expired = 0;
      t->is_active = 1;
      t->handle = g_timeout_add(t->timeout_ms, (GSourceFunc)timer_timeout_fn_internal, t);
 

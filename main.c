@@ -128,6 +128,12 @@ static void on_method_call(GDBusConnection * conn, const gchar * sender, const g
 
 	  n = notification_new(id, app_name, summary, body, expire_ms);
 
+	  if (n->expire_ms > 0) {
+	       timer_init(&n->timer, 0, 0);
+	       timer_timeout_set(&n->timer, n->expire_ms);
+	       timer_run(&n->timer);
+	  }
+
 	  notification_print(n);
 
 	  if (!id)
