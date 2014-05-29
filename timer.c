@@ -41,7 +41,9 @@ static void timer_timeout_fn_internal(void * _t)
 
      g_mutex_lock(&t->lock);
 
-     t->timeout_fn(_t, t->fn_arg);
+     if (t->timeout_fn)
+	  t->timeout_fn(_t, t->fn_arg);
+
      t->is_active = 0;
 
      g_mutex_unlock(&t->lock);
