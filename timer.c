@@ -3,15 +3,6 @@
 
 #include "timer.h"
 
-struct Timer {
-     unsigned int timeout_ms;
-     timer_timeout_fn timeout_fn;
-     void * fn_arg;
-     _Bool is_active;
-     guint handle;
-     GMutex lock;
-
-};
 
 struct Timer * timer_new(timer_timeout_fn fn, void * arg)
 {
