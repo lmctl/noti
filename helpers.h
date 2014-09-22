@@ -18,6 +18,7 @@ static inline int h_notification_replace(void * _old, void * _new)
      struct Notification * old = _old;
      struct Notification * new = _new;
 
+     timer_stop(&old->timer);
      notification_update(old, new->app, new->summary, new->body, new->expire_ms);
      timer_timeout_set(&old->timer, old->expire_ms);
      timer_run(&old->timer);
