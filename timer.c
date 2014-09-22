@@ -14,6 +14,31 @@ static void timer_fill(struct Timer * t, timer_timeout_fn fn, void * arg)
      t->fn_arg = arg;
 }
 
+static void timer_stop_unlocked(struct Timer * t)
+{
+     if (t->is_active) {
+	  g_source_remove(t->handle);
+	  t->is_active = 0;
+     }
+}
+
+static void timer_timeout_fn_internal(void * _t)
+{
+     struct Timer * t = _t;
+
+     g_mutex_lock(&t->lock);
+
+     timer_stop_unlocked(t);
+
+     if (t->timeout_fn)
+	  t->timeout_fn(_t, t->fn_arg);
+
+     t->is_expired = 1;
+
+     g_mutex_unlock(&t->lock);
+}
+
+
 struct Timer * timer_new(timer_timeout_fn fn, void * arg)
 {
      struct Timer * t;
@@ -47,21 +72,6 @@ unsigned int timer_timeout_get(struct Timer * t)
      g_mutex_unlock(&t->lock);
 
      return timeout_ms;
-}
-
-static void timer_timeout_fn_internal(void * _t)
-{
-     struct Timer * t = _t;
-
-     g_mutex_lock(&t->lock);
-
-     if (t->timeout_fn)
-	  t->timeout_fn(_t, t->fn_arg);
-
-     t->is_active = 0;
-     t->is_expired = 1;
-
-     g_mutex_unlock(&t->lock);
 }
 
 void timer_timeout_fn_set(struct Timer * t, timer_timeout_fn fn, void * arg)
@@ -100,8 +110,7 @@ void timer_run(struct Timer * t)
 {
      g_mutex_lock(&t->lock);
 
-     if (t->is_active)
-	  g_source_remove(t->handle);
+     timer_stop_unlocked(t);
 
      t->is_expired = 0;
      t->is_active = 1;
@@ -113,12 +122,7 @@ void timer_run(struct Timer * t)
 void timer_stop(struct Timer * t)
 {
      g_mutex_lock(&t->lock);
-
-     if (t->is_active) {
-	  g_source_remove(t->handle);
-	  t->is_active = 0;
-     }
-
+     timer_stop_unlocked(t);
      g_mutex_unlock(&t->lock);
 }
 
