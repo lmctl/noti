@@ -88,6 +88,28 @@ static const char noti_dbus_introspection_xml[] = ""
 
 static struct Data *data;
 
+static void data_n_release(void * _n)
+{
+     struct Notification * n = _n;
+
+     timer_stop(&n->timer);
+
+     return notification_release(n);
+}
+
+
+static int n_replace(void * _old, void * _new)
+{
+     struct Notification * old = _old;
+     struct Notification * new = _new;
+
+     timer_stop(&old->timer);
+     notification_update(old, new->app, new->summary, new->body, new->expire_ms);
+     timer_timeout_set(&old->timer, old->expire_ms);
+     timer_run(&old->timer);
+
+     return 1;
+}
 
 static void on_method_call(GDBusConnection * conn, const gchar * sender, const gchar * obj_path,
 		    const gchar * iface_name, const gchar * method_name, GVariant * params,
@@ -137,7 +159,7 @@ static void on_method_call(GDBusConnection * conn, const gchar * sender, const g
 	  } else {
 	       int r;
 
-	       r = data_apply_if(data, h_notification_cmp_id, (void *)n->id, h_notification_replace, (void *)n);
+	       r = data_apply_if(data, h_notification_cmp_id, (void *)n->id, n_replace, (void *)n);
 	       if (!r)
 		    g_warning("Unable to update non-existent notification id %u", n->id);
 
@@ -184,7 +206,7 @@ int main(int ac, char * av[])
 {
      GMainLoop * ev;
 
-     data = data_new(h_notification_release);
+     data = data_new(data_n_release);
 
      g_introspection = g_dbus_node_info_new_for_xml(noti_dbus_introspection_xml, NULL);
 

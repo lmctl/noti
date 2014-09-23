@@ -13,27 +13,6 @@ static inline int h_notification_cmp_id(void * _n, void * _id)
      return n->id == id;
 }
 
-static inline int h_notification_replace(void * _old, void * _new)
-{
-     struct Notification * old = _old;
-     struct Notification * new = _new;
-
-     timer_stop(&old->timer);
-     notification_update(old, new->app, new->summary, new->body, new->expire_ms);
-     timer_timeout_set(&old->timer, old->expire_ms);
-     timer_run(&old->timer);
-
-     return 1;
-}
-
-static inline void h_notification_release(void * _n)
-{
-     struct Notification * n = _n;
-
-     timer_stop(&n->timer);
-
-     return notification_release(n);
-}
 
 static int h_notification_print(void * _n, void * unused)
 {
