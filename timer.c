@@ -29,11 +29,11 @@ static void timer_timeout_fn_internal(void * _t)
      g_mutex_lock(&t->lock);
 
      timer_stop_unlocked(t);
+     t->is_expired = 1;
 
      if (t->timeout_fn)
 	  t->timeout_fn(_t, t->fn_arg);
 
-     t->is_expired = 1;
 
      g_mutex_unlock(&t->lock);
 }
