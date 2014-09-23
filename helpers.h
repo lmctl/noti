@@ -2,6 +2,7 @@
 #define HELPERS_H
 
 #include "notification.h"
+#include "timer.h"
 
 /* Trivial lambda-like functions only */
 
@@ -13,6 +14,12 @@ static inline int h_notification_cmp_id(void * _n, void * _id)
      return n->id == id;
 }
 
+static int h_notification_remove_test(void * _n, void * _arg)
+{
+     struct Notification * n = _n;
+
+     return n->been_shown && timer_is_expired(&n->timer);
+}
 
 static int h_notification_print(void * _n, void * unused)
 {

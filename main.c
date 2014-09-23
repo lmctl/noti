@@ -201,6 +201,16 @@ void on_name_lost(GDBusConnection *conn, const gchar *name, gpointer user_data)
 {
 }
 
+/* Remove notification if, and only if:
+ *
+ *  - it has been shown at least once
+ *
+ *  - its timer has expired
+ */
+int d_cleanup(void)
+{
+     return data_remove_if(data, h_notification_remove_test, NULL);
+}
 
 int main(int ac, char * av[])
 {
