@@ -23,6 +23,7 @@
 
 #include "notification.h"
 #include "data.h"
+#include "ui.h"
 #include "helpers.h"
 
 /*  Server identification
@@ -166,6 +167,8 @@ static void on_method_call(GDBusConnection * conn, const gchar * sender, const g
 	       notification_release(n);
 	  }
 
+	  ui_update();
+
 	  v = g_variant_new("(u)", n->id);
 	  g_dbus_method_invocation_return_value(invocation, v);
 
@@ -228,6 +231,8 @@ int main(int ac, char * av[])
 		    on_name_lost,
 		    0,
 		    0);
+
+     ui_init(&ac, &av, data);
 
      ev = g_main_loop_new(NULL, FALSE);
      g_main_loop_run(ev);
