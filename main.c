@@ -95,54 +95,77 @@ void quote(char *p)
      }
 }
 
+static void on_get_capabilities(GDBusMethodInvocation * invocation, GVariant * params)
+{
+     GVariantBuilder *b = g_variant_builder_new(G_VARIANT_TYPE("as"));
+     GVariant *v;
+     int i;
+
+     (void)params;
+
+     for (i = 0; i < G_N_ELEMENTS(noti_server_capabilities); i++)
+	  g_variant_builder_add(b, "s", noti_server_capabilities[i]);
+
+     v = g_variant_new("(as)", b);
+     g_dbus_method_invocation_return_value(invocation, v);
+     g_variant_builder_unref(b);
+}
+
+static void on_get_server_information(GDBusMethodInvocation * invocation, GVariant * params)
+{
+     GVariant *v;
+
+     (void)params;
+
+     v = g_variant_new("(ssss)", noti_server_name, noti_server_vendor, noti_server_version, noti_spec_version);
+     g_dbus_method_invocation_return_value(invocation, v);
+}
+
+static void on_notify(GDBusMethodInvocation * invocation, GVariant * params)
+{
+     GVariant *v;
+     gchar *app_name = NULL, *summary = NULL, *body = NULL;
+     uint32_t id;
+     int32_t expire_ms;
+
+     g_variant_get(params, "(&su&s&s&s^a&sa{sv}i)", &app_name, &id, NULL, &summary, &body, NULL, NULL, &expire_ms);
+     if (!id) {
+	  /* id == 0 means we should add notification
+	   * id != 0 means we should replace existing notification
+	   */
+	  id = get_next_id();
+     }
+
+     /* app could send raw data that can potentialy harm user if connected to terminal emulator */
+     quote(app_name);
+     quote(summary);
+     quote(body);
+     fprintf(out_file, "%s: %s <%s>\n", app_name, summary, body);
+
+     v = g_variant_new("(u)", id);
+     g_dbus_method_invocation_return_value(invocation, v);
+}
+
+static void on_close_notification(GDBusMethodInvocation * invocation, GVariant * params)
+{
+     /* reply not needed */
+}
 
 static void on_method_call(GDBusConnection * conn, const gchar * sender, const gchar * obj_path,
-		    const gchar * iface_name, const gchar * method_name, GVariant * params,
-		    GDBusMethodInvocation * invocation, gpointer user_data)
+			   const gchar * iface_name, const gchar * method_name, GVariant * params,
+			   GDBusMethodInvocation * invocation, gpointer user_data)
 {
      GVariant * v;
 
-     if (!g_strcmp0(method_name, "GetCapabilities")) {
-	  GVariantBuilder * b = g_variant_builder_new(G_VARIANT_TYPE("as"));
-	  int i;
-
-	  for (i = 0; i < G_N_ELEMENTS(noti_server_capabilities); i++)
-	       g_variant_builder_add(b, "s", noti_server_capabilities[i]);
-
-	  v = g_variant_new("(as)", b);
-	  g_dbus_method_invocation_return_value(invocation, v); //g_variant_new_tuple(&v, 1));
-
-	  g_variant_builder_unref(b);
-
-     } else if (!g_strcmp0(method_name, "GetServerInformation")) {
-
-	  v = g_variant_new("(ssss)", noti_server_name, noti_server_vendor, noti_server_version, noti_spec_version);
-	  g_dbus_method_invocation_return_value(invocation, v);
-
-     } else if (!g_strcmp0(method_name, "Notify")) {
-
-	  gchar * app_name = NULL, * summary = NULL, * body = NULL;
-	  uint32_t id;
-	  int32_t expire_ms;
-
-	  g_variant_get(params, "(&su&s&s&s^a&sa{sv}i)", &app_name, &id, NULL, &summary, &body, NULL, NULL, &expire_ms);
-	  if (!id) {
-               // id == 0 means we should add notification
-               // id != means we should remove existing notification
-               id = get_next_id();
-               // app could send raw data that can potentialy harm user if connected to terminal emulator
-               quote(app_name);
-               quote(summary);
-               quote(body);
-               printf("%s: %s <%s>\n", app_name, summary, body);
-	  }
-
-	  v = g_variant_new("(u)", id);
-	  g_dbus_method_invocation_return_value(invocation, v);
-
-     } else if (!g_strcmp0(method_name, "CloseNotification")) {
-          // reply not needed
-     } else
+     if (!g_strcmp0(method_name, "GetCapabilities"))
+	  return on_get_capabilities(invocation, params);
+     else if (!g_strcmp0(method_name, "GetServerInformation"))
+	  return on_get_server_information(invocation, params);
+     else if (!g_strcmp0(method_name, "Notify"))
+	  return on_notify(invocation, params);
+     else if (!g_strcmp0(method_name, "CloseNotification"))
+	  return on_close_notification(invocation, params);
+     else
 	  g_warning("Method not supported");
 }
 
