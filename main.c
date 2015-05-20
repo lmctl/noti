@@ -15,9 +15,13 @@
  * with this program; if not, write to the Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdint.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdlib.h>
 
 #include <glib.h>
 #include <gio/gio.h>
@@ -49,6 +53,11 @@ static const char noti_spec_version[] = "1.2";
  *  We intend to support handful of these.
  */
 static const char *noti_server_capabilities[] = { "body", "summary" };
+
+/* FIFO file path (below $HOME/) where raw text notifications will be
+ * printed (if present).
+ */
+static const char noti_fifo_name[] = ".notifications";
 
 /*  D-Bus boilerplate
  */
@@ -85,6 +94,9 @@ static const char noti_dbus_introspection_xml[] = ""
        "  </interface>"
        "</node>";
 
+
+/* output stream */
+FILE *out_file;
 
 void quote(char *p)
 {
@@ -195,9 +207,59 @@ void on_name_lost(GDBusConnection *conn, const gchar *name, gpointer user_data)
 {
 }
 
+int get_pipe_fd(void)
+{
+     char * notipath;
+     int fd;
+
+     if (asprintf(&notipath, "%s/%s", getenv("HOME"), noti_fifo_name) < 0)
+	  return -1;
+
+     fd = open(notipath, O_RDWR|O_NONBLOCK);
+
+     free(notipath);
+     return fd;
+}
+
+int get_stdout_fd(void)
+{
+     /* assume stdout is already opened */
+     return STDOUT_FILENO;
+}
+
+int get_out_fd(void)
+{
+     int fd = -1;
+
+     fd = get_pipe_fd();
+     fd = fd >= 0 ? fd : get_stdout_fd();
+
+     return fd;
+}
+
+void set_file_flags(FILE *fp)
+{
+     setvbuf(fp, NULL, _IONBF, 0);
+}
+
+FILE *get_out_file(void)
+{
+     FILE *fp;
+
+     fp = fdopen(get_out_fd(), "a");
+     if (!fp)
+	  fp = stdout;
+
+     set_file_flags(fp);
+
+     return fp;
+}
+
 int main(int ac, char * av[])
 {
      GMainLoop * ev;
+
+     out_file = get_out_file();
 
      g_introspection = g_dbus_node_info_new_for_xml(noti_dbus_introspection_xml, NULL);
 
