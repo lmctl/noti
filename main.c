@@ -17,20 +17,18 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+#include <ctype.h>
 
 #include <glib.h>
 #include <gio/gio.h>
 
 #include "notification.h"
-#include "data.h"
-#include "ui.h"
-#include "helpers.h"
 
 /*  Server identification
  *
  *  This information is returned verbatim by GetServerIdentification D-Bus method
  */
-static const char noti_server_name[] = "traynoti";
+static const char noti_server_name[] = "trivialnoti";
 static const char noti_server_vendor[] = "Karol Lewandowski";
 static const char noti_server_version[] = "0.1";
 static const char noti_spec_version[] = "1.2";
@@ -87,30 +85,16 @@ static const char noti_dbus_introspection_xml[] = ""
        "  </interface>"
        "</node>";
 
-static struct Data *data;
 
-static void data_n_release(void * _n)
+void quote(char *p)
 {
-     struct Notification * n = _n;
-
-     timer_stop(&n->timer);
-
-     return notification_release(n);
+     while (p && *p) {
+	  if (!isalnum(*p))
+	       *p = '_';
+	  ++p;
+     }
 }
 
-
-static int n_replace(void * _old, void * _new)
-{
-     struct Notification * old = _old;
-     struct Notification * new = _new;
-
-     timer_stop(&old->timer);
-     notification_update(old, new->app, new->summary, new->body, new->expire_ms);
-     timer_timeout_set(&old->timer, old->expire_ms);
-     timer_run(&old->timer);
-
-     return 1;
-}
 
 static void on_method_call(GDBusConnection * conn, const gchar * sender, const gchar * obj_path,
 		    const gchar * iface_name, const gchar * method_name, GVariant * params,
@@ -140,40 +124,24 @@ static void on_method_call(GDBusConnection * conn, const gchar * sender, const g
 	  gchar * app_name = NULL, * summary = NULL, * body = NULL;
 	  uint32_t id;
 	  int32_t expire_ms;
-	  struct Notification * n;
 
 	  g_variant_get(params, "(&su&s&s&s^a&sa{sv}i)", &app_name, &id, NULL, &summary, &body, NULL, NULL, &expire_ms);
-
-	  n = notification_new(id, app_name, summary, body, expire_ms);
-
-	  notification_print(n);
-
 	  if (!id) {
-	       data_add(data, n);
-
-	       if (n->expire_ms > 0) {
-		    timer_init(&n->timer, 0, 0);
-		    timer_timeout_set(&n->timer, n->expire_ms);
-		    timer_run(&n->timer);
-	       }
-
-	  } else {
-	       int r;
-
-	       r = data_apply_if(data, h_notification_cmp_id, (void *)n->id, n_replace, (void *)n);
-	       if (!r)
-		    g_warning("Unable to update non-existent notification id %u", n->id);
-
-	       notification_release(n);
+               // id == 0 means we should add notification
+               // id != means we should remove existing notification
+               id = get_next_id();
+               // app could send raw data that can potentialy harm user if connected to terminal emulator
+               quote(app_name);
+               quote(summary);
+               quote(body);
+               printf("%s: %s <%s>\n", app_name, summary, body);
 	  }
 
-	  ui_update();
-
-	  v = g_variant_new("(u)", n->id);
+	  v = g_variant_new("(u)", id);
 	  g_dbus_method_invocation_return_value(invocation, v);
 
      } else if (!g_strcmp0(method_name, "CloseNotification")) {
-
+          // reply not needed
      } else
 	  g_warning("Method not supported");
 }
@@ -204,22 +172,9 @@ void on_name_lost(GDBusConnection *conn, const gchar *name, gpointer user_data)
 {
 }
 
-/* Remove notification if, and only if:
- *
- *  - it has been shown at least once
- *
- *  - its timer has expired
- */
-int d_cleanup(void)
-{
-     return data_remove_if(data, h_notification_remove_test, NULL);
-}
-
 int main(int ac, char * av[])
 {
      GMainLoop * ev;
-
-     data = data_new(data_n_release);
 
      g_introspection = g_dbus_node_info_new_for_xml(noti_dbus_introspection_xml, NULL);
 
@@ -231,8 +186,6 @@ int main(int ac, char * av[])
 		    on_name_lost,
 		    0,
 		    0);
-
-     ui_init(&ac, &av, data);
 
      ev = g_main_loop_new(NULL, FALSE);
      g_main_loop_run(ev);
