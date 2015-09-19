@@ -98,6 +98,8 @@ static const char noti_dbus_introspection_xml[] = ""
 /* output stream */
 FILE *out_file;
 
+GMainLoop * ev;
+
 void quote(char *p)
 {
      while (p && *p) {
@@ -205,6 +207,10 @@ void on_name_acquired(GDBusConnection * conn, const gchar * name, gpointer user_
 
 void on_name_lost(GDBusConnection *conn, const gchar *name, gpointer user_data)
 {
+     if (!conn) {
+	  g_error("Unable to acquire %s name on bus.", name);
+	  g_main_loop_quit(ev);
+     }
 }
 
 int get_pipe_fd(void)
@@ -257,8 +263,6 @@ FILE *get_out_file(void)
 
 int main(int ac, char * av[])
 {
-     GMainLoop * ev;
-
      out_file = get_out_file();
 
      g_introspection = g_dbus_node_info_new_for_xml(noti_dbus_introspection_xml, NULL);
